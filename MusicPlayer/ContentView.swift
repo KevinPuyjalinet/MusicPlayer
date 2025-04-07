@@ -15,6 +15,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .preferredColorScheme(.dark)
 }
 
 struct AppleMusicPlayer: View {
@@ -24,15 +25,19 @@ struct AppleMusicPlayer: View {
     @State private var volume: Double = 0.5
     @State private var totalVolume: Double = 1
     @State private var isLiked: Bool = false
+    @State private var likeSheet: Bool = false
     @State private var showingLyrics: Bool = false
+    @State var musicData: [MusicData] = sampleMusicData
+    @State var selectedMusic: Int = 0
     private let totalTime: Double = 240
     private let albumArtSize: CGFloat = UIScreen.main.bounds.width - 40
     
     var body: some View {
         ZStack {
             //Background Gradient
-            LinearGradient(gradient: Gradient(colors: [.purple, .black]), startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+                LinearGradient(gradient: Gradient(colors: [musicData[selectedMusic].backgroundCover, .black]), startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+                    .animation(.easeInOut, value: selectedMusic)
             
             VStack {
                 HStack {
@@ -61,31 +66,43 @@ struct AppleMusicPlayer: View {
                 .padding()
                 
                 //Album Artwork Image
-                Image("album_cover")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 300, height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .padding(.top, 40)
-                    .padding(.bottom, 40)
-                    .shadow(color: .black, radius: 5, x: 0, y: 5)
                 
-                    //Song information and like/more options
+                TabView(selection: $selectedMusic) {
+                    ForEach(musicData.indices, id: \.self) { index in
+                        let music = musicData[index]
+                        Image(music.cover)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 300, height: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .padding(.top, 40)
+                            .padding(.bottom, 90)
+                            .shadow(color: .black, radius: 5, x: 0, y: 5)
+                            .tag(index)
+                    }
+                }.tabViewStyle(.page(indexDisplayMode: .always))
+                
+                //Song information and like/more options
                 HStack {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Sphere")
+                        Text(musicData[selectedMusic].title)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
                         
-                        Text("Jongho Baek")
+                        Text(musicData[selectedMusic].artist)
                             .font(.subheadline)
                             .foregroundStyle(.gray)
                     }
+                    .animation(.easeInOut, value: selectedMusic)
                     Spacer()
                     Button {
                         // Like button Toggling Between liked.unliked state
                         isLiked.toggle()
+                        likeSheet.toggle()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    likeSheet = false
+                                }
                     } label: {
                         Image(systemName: isLiked ? "star.circle.fill" : "star.circle")
                             .resizable()
@@ -93,6 +110,10 @@ struct AppleMusicPlayer: View {
                             .foregroundStyle(isLiked ? .yellow : .white)
                             .imageScale(.large)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
+                    }.sheet(isPresented: $likeSheet) {
+                            Text(isLiked ? "Musique ajouté en favoris" : "Musique supprimer en favoris")
+                                .presentationDetents([.height(40)])
+                                .presentationBackground(.ultraThinMaterial)
                     }
                     
                     //More option button with background circle
@@ -183,9 +204,23 @@ struct AppleMusicPlayer: View {
                             Image(systemName: "quote.bubble")
                             
                         }.sheet(isPresented: $showingLyrics) {
-                            Text("")
-                                .presentationDetents([.medium, .large])
-                        }.preferredColorScheme(.dark)
+                            if musicData[selectedMusic].lyric == "" {
+                                Text("Lyrics not available")
+                                    .presentationDetents([.medium])
+                                     .presentationBackground(.ultraThinMaterial)
+                                    .font(.subheadline)
+                                    .bold()
+                            } else {
+                                ScrollView(.vertical) {
+                                        Text(musicData[selectedMusic].lyric)
+                                            .font(.subheadline)
+                                            .bold()
+                                            .presentationDetents([.medium])
+                                            .presentationBackground(.ultraThinMaterial)
+                                }
+                                .padding([.top, .leading])
+                            }
+                        }
                         
                         Button {
                              //Action for connecting to AirPods or similar
