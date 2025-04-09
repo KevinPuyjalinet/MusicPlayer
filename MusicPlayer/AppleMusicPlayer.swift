@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MediaPlayer
 
 struct AppleMusicPlayer: View {
     //MARK: - State Variable
@@ -13,6 +14,7 @@ struct AppleMusicPlayer: View {
     @State private var likeSheet: Bool = false
     @State private var showingLyrics: Bool = false
     @State private var airPodsSheet: Bool = false
+    @State private var playlistSheet: Bool = false
     @Environment(\.dismiss) var dismiss
     @State var is3DYRotating: Double = 360.0
     private let totalTime: Double = 240
@@ -26,6 +28,7 @@ struct AppleMusicPlayer: View {
                     .animation(.easeInOut, value: viewModel.selectedMusic)
             
             VStack {
+                //MARK: - Header
                 HStack {
                     Button {
                         // Action for dismissing or minimizing the player
@@ -52,7 +55,7 @@ struct AppleMusicPlayer: View {
                 .padding()
                 
                 //Album Artwork Image
-                
+                //MARK: - Artwork
                 TabView(selection: $viewModel.selectedMusic) {
                     ForEach(viewModel.musicData.indices, id: \.self) { index in
                         let music = viewModel.musicData[index]
@@ -61,7 +64,7 @@ struct AppleMusicPlayer: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 300, height: 300)
                             .clipShape(RoundedRectangle(cornerRadius: 20))
-                            .padding(.top, 40)
+                            .padding(.top, 60)
                             .padding(.bottom, 90)
                             .shadow(color: .black, radius: 5, x: 0, y: 5)
                             .tag(index)
@@ -99,14 +102,14 @@ struct AppleMusicPlayer: View {
                             .imageScale(.large)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
                         
-                    }.sheet(isPresented: $likeSheet) {
+                    }.onChange(of: viewModel.currentMusic, {
+                        viewModel.isLiked = false
+                    })
+                    .sheet(isPresented: $likeSheet) {
                         VStack(spacing: 5) {
                             Text(viewModel.isLiked ? "Musique ajouté en favoris" : "Musique supprimer en favoris")
                                 .presentationDetents([.height(40)])
                                 .presentationBackground(.ultraThinMaterial)
-//                            ProgressView(value: viewModel.progress, total: 1.0)
-//                                                .progressViewStyle(LinearProgressViewStyle())
-//                                                .padding()
                         }
                     }
                     
@@ -115,9 +118,9 @@ struct AppleMusicPlayer: View {
                         //Action for additing options
                         Button("Option 1", action: { print("Option 1") })
                         Button("Option 2", action: { print("Option 2") })
-                        
+                       
                     } label: {
-                        Image(systemName: viewModel.optionButton ? "ellipsis.circle" : "ellipsis.circle.fill")
+                        Image(systemName: "ellipsis.circle")
                                 .resizable()
                                 .frame(width: 25, height: 25)
                                 .foregroundStyle(.white)
@@ -129,16 +132,23 @@ struct AppleMusicPlayer: View {
                 .padding(.top)
                 .padding(.bottom, 50)
                 
+                //MARK: - Player
+                
                 //Playback progress bar with current time and total time labels
                 VStack {
-                    customProgressBarView(value: $viewModel.currentTime, range: 0...totalTime)
-                        .frame(height: 3)
-                        .padding(.horizontal)
+                    Slider(value: Binding(get: {
+                        viewModel.currentTimes
+                    }, set: { newValue in
+                        viewModel.audioTime(to: newValue)
+                    }), in: 0...viewModel.totalTime)
+                    .tint(viewModel.currentMusic.backgroundCover)
+                    .padding(.horizontal)
                     
                     HStack {
-                        Text(viewModel.timeString(time: viewModel.currentTime))
+                        Text(viewModel.timeString(time: viewModel.currentTimes))
                         Spacer()
-                        Text(viewModel.timeString(time: totalTime))
+                        Text(viewModel.timeString(time: viewModel.totalTime))
+                        
                     }
                     .font(.caption)
                     .foregroundStyle(.gray)
@@ -149,15 +159,26 @@ struct AppleMusicPlayer: View {
                     HStack(spacing: 40) {
                         Button {
                             //Action for previous track
+                            viewModel.backForward(by: viewModel.totalTime)
                         } label: {
                             Image(systemName: "backward.fill")
                                 .font(.title2)
                         }
                         Button {
-                            viewModel.togglePlay()
+                            viewModel.isPlaying ? viewModel.stopAudio(): viewModel.playAudio()
+                            print(viewModel.isPlaying)
                         } label: {
                             Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                                 .font(.system(size: 60))
+                        }
+                        .onAppear(perform: {
+                            viewModel.setupAudio()
+                        })
+                        .onChange(of: viewModel.currentMusic) {
+                            viewModel.setupAudio()
+                        }
+                        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
+                            viewModel.updateProgress()
                         }
                         Button {
                             // Action for next track
@@ -171,27 +192,33 @@ struct AppleMusicPlayer: View {
                     //Volume control slider with speaker icons
                     HStack {
                         Button {
-                            
+                            viewModel.volume -= 10
                         } label: {
                             Image(systemName: "speaker.fill")
                                 .font(.title2)
+                        }.disabled(viewModel.volume == 0.5)
+                         .foregroundStyle(viewModel.volume == 0.5 ? Color.white.opacity(0.3) : Color.white)
+                        
+                        VStack {
+                            Slider(value: $viewModel.volume, in: 0...Double(viewModel.totalVolume))
+                                .tint(viewModel.currentMusic.backgroundCover)
                         }
                         
-                        customProgressBarView(value: $viewModel.volume, range: 0...viewModel.totalVolume)
-                            .frame(height: 3)
-                            .padding(.horizontal, 20)
-                        
                         Button {
-                            
+                            viewModel.volume += 10
                         } label: {
                             Image(systemName: "speaker.wave.3.fill")
                                 .font(.title2)
-                        }
+                        }.disabled(viewModel.volume == 100.5)
+                         .foregroundStyle(viewModel.volume == 100.5 ? Color.white.opacity(0.3) : Color.white)
                     }
                     .padding(.horizontal)
                     .foregroundStyle(.white)
                     .padding(.top)
                     
+                    Text("\(Int(viewModel.volume))%")
+                    
+                    //MARK: - Footer
                     //Additional control buttons (e.g., lyrics, AirPods, playlist)
                     HStack(spacing: 80) {
                         Button {
@@ -203,7 +230,7 @@ struct AppleMusicPlayer: View {
                         }.sheet(isPresented: $showingLyrics) {
                             if viewModel.currentMusic.lyric == "" {
                                 Text("Lyrics not available")
-                                    .presentationDetents([.medium])
+                                    .presentationDetents([.height(300)])
                                      .presentationBackground(.ultraThinMaterial)
                                     .font(.subheadline)
                                     .bold()
@@ -230,8 +257,15 @@ struct AppleMusicPlayer: View {
                         
                         Button {
                              //Action for showing the playlist
+                            playlistSheet.toggle()
                         } label: {
                             Image(systemName: "list.bullet")
+                        }.sheet(isPresented: $playlistSheet) {
+                            playlistview()
+                                .presentationDetents([.height(300)])
+                                .presentationBackground(.ultraThinMaterial)
+                                .font(.subheadline)
+                                .bold()
                         }
                     }
                     .font(.title2)
@@ -265,11 +299,6 @@ struct AppleMusicPlayer: View {
                 .resizable()
                 .frame(width: 200, height: 200)
                 .padding()
-//                .rotation3DEffect(.degrees(is3DYRotating * 2), axis: (x: 0, y: is3DYRotating, z: 0))
-//                .animation(.easeOut(duration: 6).repeatForever(autoreverses: false), value: is3DYRotating)
-//                .onAppear {
-//                    is3DYRotating = .random(in: 1...80)
-//                }
             Image(systemName: "battery.75")
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.green)
@@ -280,6 +309,16 @@ struct AppleMusicPlayer: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         Spacer()
+    }
+    @ViewBuilder
+    func playlistview() -> some View {
+            if viewModel.isLiked {
+                List {
+                    Text("\(viewModel.currentMusic.artist) - \(viewModel.currentMusic.title)")
+                }
+            } else {
+                Text("Empty playlist")
+        }
     }
 }
 

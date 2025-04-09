@@ -7,22 +7,26 @@
 
 import Foundation
 import SwiftUI
+import AVKit
 
 class AppleMusicViewModel: ObservableObject {
     //Model Instance
     @Published var musicData: [MusicData] = sampleMusicData
     //Bool
     @Published var isLiked: Bool = false
-    @Published var isPlaying: Bool = false
     @Published var optionButton: Bool = false
     //Double/Int
-    @Published var currentTime: Double = 120
     @Published var volume: Double = 0.5
-    @Published var totalVolume: Double = 1
+    @Published var totalVolume: Int = 100
     @Published var selectedMusic: Int = 0
     @Published var progress: Double = 1.0
     //Timer
     @Published var timer: Timer? = nil
+    //AVKit
+    @Published var player: AVAudioPlayer?
+    @Published var isPlaying: Bool = false
+    @Published var totalTime: TimeInterval = 0.0
+    @Published var currentTimes: TimeInterval = 0.0
     
      var currentMusic: MusicData {
          musicData[selectedMusic]
@@ -35,9 +39,48 @@ class AppleMusicViewModel: ObservableObject {
         }
     }
     // Format a time value (in seconds) to a string in "m:ss" format
-     func timeString(time: Double) -> String {
+     func timeString(time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    //Audio Player
+     func setupAudio() {
+        stopAudio()
+        guard let url = Bundle.main.url(forResource: currentMusic.music, withExtension: "mp3") else { return }
+        do {
+            player = try AVAudioPlayer(contentsOf: url)
+            player?.prepareToPlay()
+            totalTime = player?.duration ?? 0.0
+            print("Music selected: \(currentMusic.title) - \(currentMusic.artist)")
+        } catch {
+            print("Error loading audio: \(error)")
+        }
+    }
+    
+    func playAudio() {
+        guard let player = player else { return }
+        player.play()
+        isPlaying = true
+    }
+    func stopAudio() {
+        guard let player = player else { return }
+        player.stop()
+        isPlaying = false
+    }
+    func updateProgress() {
+        guard let player = player else { return }
+        currentTimes = player.currentTime
+        progress = Double(currentTimes) / totalTime
+    }
+    
+    func audioTime(to time: TimeInterval) {
+     player?.currentTime = time
+    }
+    func backForward(by seconds: TimeInterval) {
+        audioTime(to: currentTimes + seconds)
+    }
+    func moveForward(by seconds: TimeInterval) {
+        audioTime(to: currentTimes - seconds)
     }
 }
