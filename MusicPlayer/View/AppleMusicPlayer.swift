@@ -17,14 +17,10 @@ struct AppleMusicPlayer: View {
     @State var airPodsSheet: Bool = false
     @State var playlistSheet: Bool = false
     
-    var linearGradient: LinearGradient {
-        LinearGradient(gradient: Gradient(colors: [viewModel.currentMusic.backgroundCover, .black]), startPoint: .top, endPoint: .bottom)
-    }
-    
     var body: some View {
         ZStack {
             //Background Gradient
-              linearGradient
+            viewModel.linearGradient()
                     .ignoresSafeArea()
                     .animation(.easeInOut, value: viewModel.selectedMusic)
             
@@ -32,7 +28,6 @@ struct AppleMusicPlayer: View {
                 //MARK: - Header
                 HeaderView()
                 
-                //Album Artwork Image
                 //MARK: - Artwork
                 ArtworkView(likeSheet: $likeSheet)
                 

@@ -9,14 +9,23 @@ import SwiftUI
 
 struct PlayListView: View {
     @EnvironmentObject var viewModel: AppleMusicViewModel
+    
     var body: some View {
-        if viewModel.isLiked {
-            List {
-                Text("\(viewModel.currentMusic.artist) - \(viewModel.currentMusic.title)")
-            }
-        } else {
+        // Vérifie si la LISTE des musiques likées est vide
+        if viewModel.musicLiked.isEmpty {
             Text("Empty playlist")
-    }
+        } else {
+            // Si la liste n'est PAS vide, affiche la liste
+            List {
+                ForEach(viewModel.musicLiked) { playlist in
+                    Text("\(playlist.artist) - \(playlist.title)")
+                    if viewModel.isLiked == false {
+//                        viewModel.removeItems()
+                    }
+                }
+                .onDelete(perform: viewModel.removeItems)
+            }
+        }
     }
 }
 

@@ -16,7 +16,7 @@ struct PlayerView: View {
             }, set: { newValue in
                 viewModel.audioTime(to: newValue)
             }), in: 0...viewModel.totalTime)
-            .tint(viewModel.currentMusic.backgroundCover)
+            .tint(viewModel.currentMusic().backgroundCover)
             .padding(.horizontal)
             
             HStack {
@@ -32,15 +32,18 @@ struct PlayerView: View {
         //Playback controls and additional options
         VStack {
             HStack(spacing: 40) {
+                //MARK: - Back Forward Button
                 Button {
                     //Action for previous track
                     viewModel.backForward()
+                    viewModel.hapticReturn(style: .light)
                 } label: {
                     Image(systemName: "backward.fill")
                         .font(.title2)
                 }.disabled(viewModel.selectedMusic == 0)
                  .foregroundStyle(viewModel.selectedMusic == 0 ? .white.opacity(0.3) : .white)
                 
+                //MARK: - Play/Pause Button
                 Button {
                     viewModel.isPlaying ? viewModel.stopAudio(): viewModel.playAudio()
                     print(viewModel.isPlaying)
@@ -51,16 +54,17 @@ struct PlayerView: View {
                 .onAppear(perform: {
                     viewModel.setupAudio()
                 })
-                .onChange(of: viewModel.currentMusic) {
+                .onChange(of: viewModel.currentMusic()) {
                     viewModel.setupAudio()
                 }
                 .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
                     viewModel.updateProgress()
                 }
+                
+                //MARK: - Move Forward Button
                 Button {
-                    // Action for next track
                     viewModel.moveForward()
-                    
+                    viewModel.hapticReturn(style: .light)
                 } label: {
                     Image(systemName: "forward.fill")
                         .font(.title2)
@@ -69,28 +73,28 @@ struct PlayerView: View {
             }
             .foregroundStyle(Color.white)
             
-            //Volume control slider with speaker icons
+            //MARK: - Slider Volume
             HStack {
                 Button {
-                    viewModel.volume -= 10
+                    viewModel.volume = max(viewModel.volume - 10, 0)
+                    viewModel.hapticReturn(style: .light)
                 } label: {
                     Image(systemName: "speaker.fill")
                         .font(.title2)
-                }.disabled(viewModel.volume == 0.5)
-                    .foregroundStyle(viewModel.volume == 0.5 ? Color.white.opacity(0.3) : Color.white)
+                }.disabled(viewModel.volume <= 0.5)
+                    .foregroundStyle(viewModel.volume <= 0.5 ? Color.white.opacity(0.3) : Color.white)
                 
-                VStack {
                     Slider(value: $viewModel.volume, in: 0...Double(viewModel.totalVolume))
-                        .tint(viewModel.currentMusic.backgroundCover)
-                }
+                        .tint(viewModel.currentMusic().backgroundCover)
                 
                 Button {
-                    viewModel.volume += 10
+                    viewModel.volume = min(viewModel.volume + 10, 100)
+                    viewModel.hapticReturn(style: .light)
                 } label: {
                     Image(systemName: "speaker.wave.3.fill")
                         .font(.title2)
-                }.disabled(viewModel.volume == 100.5)
-                    .foregroundStyle(viewModel.volume == 100.5 ? Color.white.opacity(0.3) : Color.white)
+                }.disabled(viewModel.volume >= 100)
+                 .foregroundStyle(viewModel.volume >= 100 ? Color.white.opacity(0.3) : Color.white)
             }
             .padding(.horizontal)
             .foregroundStyle(.white)

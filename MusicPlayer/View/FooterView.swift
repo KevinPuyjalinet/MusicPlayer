@@ -21,7 +21,7 @@ struct FooterView: View {
                 Image(systemName: "quote.bubble")
                 
             }.sheet(isPresented: $showingLyrics) {
-                if viewModel.currentMusic.lyric == "" {
+                if viewModel.currentMusic().lyric == "" {
                     Text("Lyrics not available")
                         .presentationDetents([.height(300)])
                          .presentationBackground(.ultraThinMaterial)
@@ -29,7 +29,7 @@ struct FooterView: View {
                         .bold()
                 } else {
                     ScrollView(.vertical) {
-                        Text(viewModel.currentMusic.lyric)
+                        Text(viewModel.currentMusic().lyric)
                                 .font(.subheadline)
                                 .bold()
                                 .presentationDetents([.medium])

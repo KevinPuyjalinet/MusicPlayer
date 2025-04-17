@@ -29,12 +29,12 @@ struct ArtworkView: View {
         //Song information and like/more options
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text(viewModel.currentMusic.title)
+                Text(viewModel.currentMusic().title)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
                 
-                Text(viewModel.currentMusic.artist)
+                Text(viewModel.currentMusic().artist)
                     .font(.subheadline)
                     .foregroundStyle(.gray)
             }
@@ -42,9 +42,11 @@ struct ArtworkView: View {
             
             Spacer()
             Button {
-                // Like button Toggling Between liked.unliked state
+                // Like button Toggling Between liked unliked state
+//                viewModel.toggleLike()
                 viewModel.isLiked.toggle()
                 likeSheet.toggle()
+                viewModel.successFeedback()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                             likeSheet = false
                         }
@@ -57,15 +59,11 @@ struct ArtworkView: View {
                     .imageScale(.large)
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
                 
-            }.onChange(of: viewModel.currentMusic, {
-                viewModel.isLiked = false
-            })
+            }.onChange(of: viewModel.currentMusic()) {
+                viewModel.updateIsLikedState()
+            }
             .sheet(isPresented: $likeSheet) {
-                VStack(spacing: 5) {
-                    Text(viewModel.isLiked ? "Musique ajouté en favoris" : "Musique supprimer en favoris")
-                        .presentationDetents([.height(40)])
-                        .presentationBackground(.ultraThinMaterial)
-                }
+                sheetLikedView(viewModel: viewModel)
             }
             
             //More option button with background circle
@@ -86,6 +84,15 @@ struct ArtworkView: View {
         .padding(.horizontal)
         .padding(.top)
         .padding(.bottom, 50)
+    }
+}
+
+@ViewBuilder
+func sheetLikedView(viewModel: AppleMusicViewModel) -> some View {
+    VStack(spacing: 5) {
+        Text(viewModel.isLiked ? "Musique ajouté en favoris" : "Musique supprimer en favoris")
+            .presentationDetents([.height(40)])
+            .presentationBackground(.ultraThinMaterial)
     }
 }
 
