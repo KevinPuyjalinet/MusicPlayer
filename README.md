@@ -50,9 +50,10 @@ L'app suit l'architecture **MVVM** :
 
 ---
 
-## 🔮 Idées futures
+## 🔮 Évolutions prévues
 
 - Mode mini player
+- Intégration de **MusicKit**
 - Prise en charge d’une vraie playlist dynamique
 - Intégration avec Apple Music API
 
