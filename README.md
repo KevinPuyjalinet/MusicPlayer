@@ -11,6 +11,7 @@ Une application iOS développée en **SwiftUI** et suivant le pattern **MVVM**, 
 - ⏯️ Boutons de lecture, pause et navigation
 - 🎚️ Sliders de volume et de timeline
 - 🎛️ Interface découpée en composants modulaires
+- 📳 **Retour haptique** à l'interaction pour une expérience utilisateur plus immersive
 
 ---
 
@@ -36,6 +37,7 @@ L'app suit l'architecture **MVVM** :
 - Swift 5
 - SwiftUI 3+
 - AVKit
+- Haptics / UIKit feedback generator
 - MVVM architecture
 
 ---
